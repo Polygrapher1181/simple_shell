@@ -1,4 +1,4 @@
-#include "shell.h"
+#include "carp.h"
 
 /**
  * _realloc - Reallocates a memory block using malloc and free.
@@ -129,6 +129,3 @@ ssize_t _getline(char **lineptr, size_t *n, FILE *stream)
 		input++;
 	}
 	buffer[input] = '\0';
-
-	
-

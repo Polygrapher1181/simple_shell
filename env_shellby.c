@@ -78,7 +78,8 @@ int shellby_setenv(char **args, char __attribute__((__unused__)) **front)
 	environ = new_environ;
 	environ[index] = new_value;
 	environ[index + 1] = NULL;
-        return (0);
+        
+	return (0);
 }
 
 /**

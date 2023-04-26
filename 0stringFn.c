@@ -27,12 +27,13 @@ int _strlen(const char *s)
  */
 char *_strcpy(char *dest, const char *src)
 {
-        size_t i;
+	size_t i;
 
-        for (i = 0; src[i] != '\0'; i++)
-                dest[i] = src[i];
-        dest[i] = '\0';
-        return (dest);
+	for (i = 0; src[i] != '\0'; i++)
+		dest[i] = src[i];
+	dest[i] = '\0';
+
+	return (dest);
 }
 
 /**
@@ -65,15 +66,23 @@ char *_strcat(char *dest, const char *src)
  *
  * Return: Pointer to destination string.
  */
+/**
+ * _strncat - Concatenates two strings, using at most n bytes of src.
+ * @dest: Destination string.
+ * @src: Source string.
+ * @n: Maximum number of bytes to use from src.
+ *
+ * Return: Pointer to the resulting string dest.
+ */
+
 char *_strncat(char *dest, const char *src, size_t n)
 {
-        size_t dest_len = _strlen(dest);
-        size_t i;
+	size_t dest_len = _strlen(dest);
+	size_t i;
 
-        for (i = 0; i < n && src[i] != '\0'; i++)
-                dest[dest_len + i] = src[i];
-        dest[dest_len + i] = '\0';
+	for (i = 0; i < n && src[i] != '\0'; i++)
+		dest[dest_len + i] = src[i];
+	dest[dest_len + i] = '\0';
 
-        return (dest);
+	return (dest);
 }
-

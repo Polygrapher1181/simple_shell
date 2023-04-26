@@ -1,21 +1,29 @@
-#include "carp.h"
+#include "shell.h"
+
+int _strlen(const char *s);
+char *_strcpy(char *dest, const char *src);
+char *_strcat(char *dest, const char *src);
+char *_strncat(char *dest, const char *src, size_t n);
 
 /**
  * _strlen - Returns the length of a string.
- * @s: A pointer to the characters string.
+ * @s: The string to get the length of.
  *
- * Return: The length of the character string.
+ * Return: The length of the string.
  */
 int _strlen(const char *s)
 {
-        int length = 0;
+	int length = 0;
 
-        if (!s)
-                return (length);
-        for (length = 0; s[length]; length++)
-                ;
-        return (length);
+	if (!s)
+		return (length);
+
+	for (length = 0; s[length]; length++)
+		;
+
+	return (length);
 }
+
 
 /**
  * _strcpy - Copies the string pointed to by src, including the
@@ -32,33 +40,34 @@ char *_strcpy(char *dest, const char *src)
 	for (i = 0; src[i] != '\0'; i++)
 		dest[i] = src[i];
 	dest[i] = '\0';
-
 	return (dest);
 }
 
 /**
- * _strcat - Concantenates two strings.
- * @dest: Pointer to destination string.
- * @src: Pointer to source string.
+ * _strcat - Concatenates two strings
+ * @dest: Destination string
+ * @src: Source string
  *
- * Return: Pointer to destination string.
+ * Return: Pointer to the destination string
  */
 char *_strcat(char *dest, const char *src)
 {
-        char *destTemp = dest;
-        const char *srcTemp = src;
+	char *dest_temp = dest;
+	const char *src_temp = src;
 
-        while (*destTemp != '\0')
-                destTemp++;
+	while (*dest_temp != '\0')
+		dest_temp++;
 
-        while (*srcTemp != '\0')
-                *destTemp++ = *srcTemp++;
-        *destTemp = '\0';
-        return (dest);
+	while (*src_temp != '\0')
+		*dest_temp++ = *src_temp++;
+
+	*dest_temp = '\0';
+	return (dest);
 }
 
+
 /**
- * _strncat - Concatenates two strings where n number
+ * _strncat - Concantenates two strings where n number
  *            of bytes are copied from source.
  * @dest: Pointer to destination string.
  * @src: Pointer to source string.
@@ -66,15 +75,6 @@ char *_strcat(char *dest, const char *src)
  *
  * Return: Pointer to destination string.
  */
-/**
- * _strncat - Concatenates two strings, using at most n bytes of src.
- * @dest: Destination string.
- * @src: Source string.
- * @n: Maximum number of bytes to use from src.
- *
- * Return: Pointer to the resulting string dest.
- */
-
 char *_strncat(char *dest, const char *src, size_t n)
 {
 	size_t dest_len = _strlen(dest);

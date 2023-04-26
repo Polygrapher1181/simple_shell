@@ -1,132 +1,122 @@
 #include "carp.h"
 
 /**
- * _realloc - Reallocates a memory block using malloc and free.
- * @ptr: A pointer to the memory previously allocated.
- * @old_size: The size in bytes of the allocated space for ptr.
- * @new_size: The size in bytes for the new memory block.
+ * free_args - Frees up memory taken by args.
+ * @args: A null-terminated double pointer containing commands/arguments.
+ * @front: A double pointer to the beginning of args.
  *
- * Return: If new_size == old_size - ptr.
- *         If new_size == 0 and ptr is not NULL - NULL.
- *         Otherwise - a pointer to the reallocated memory block.
+ * Return: void.
  */
-void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size)
+void free_args(char **args, char **front)
 {
-        void *mem;
-        char *ptr_copy, *filler;
-        unsigned int index;
+	size_t i;
 
-        if (new_size == old_size)
-                return (ptr);
+	for (i = 0; args[i] || args[i + 1]; i++)
+		free(args[i]);
 
-        if (ptr == NULL)
-        {
-                mem = malloc(new_size);
-                if (mem == NULL)
-                        return (NULL);
-
-                return (mem);
-        }
-
-        if (new_size == 0 && ptr != NULL)
-        {
-                free(ptr);
-                return (NULL);
-        }
-
-        ptr_copy = ptr;
-        mem = malloc(sizeof(*ptr_copy) * new_size);
-        if (mem == NULL)
-        {
-                free(ptr);
-                return (NULL);
-        }
-
-        filler = mem;
-
-        for (index = 0; index < old_size && index < new_size; index++)
-                filler[index] = *ptr_copy++;
-
-        free(ptr);
-        return (mem);
+	free(front);
 }
 
 /**
- * assign_lineptr - Reassigns the lineptr variable for _getline.
- * @lineptr: A buffer to store an input string.
- * @n: The size of lineptr.
- * @buffer: The string to assign to lineptr.
- * @b: The size of buffer.
+ * get_pid - Gets the current process ID.
+ *
+ * Return: The current process ID or NULL on failure.
+ *
+ * Description: Opens the stat file, a space-delimited file containing
+ *              information about the current process. The PID is the
+ *              first word in the file. The function reads the PID into
+ *              a buffer and replace the space at the end with a \0 byte.
  */
-void assign_lineptr(char **lineptr, size_t *n, char *buffer, size_t b)
+char *get_pid(void)
 {
-        if (*lineptr == NULL)
-        {
-                if (b > 120)
-                        *n = b;
-                else
-                        *n = 120;
-                *lineptr = buffer;
-        }
-        else if (*n < b)
-        {
-                if (b > 120)
-                        *n = b;
-                else
-                        *n = 120;
-                *lineptr = buffer;
-        }
-        else
-        {
-                _strcpy(*lineptr, buffer);
-                free(buffer);
-        }
+	size_t i = 0;
+	char *buffer;
+	ssize_t file;
+
+	file = open("/proc/self/stat", O_RDONLY);
+	if (file == -1)
+	{
+		perror("Cant read file");
+		return (NULL);
+	}
+	buffer = malloc(120);
+	if (!buffer)
+	{
+		close(file);
+		return (NULL);
+	}
+	read(file, buffer, 120);
+	while (buffer[i] != ' ')
+		i++;
+	buffer[i] = '\0';
+
+	close(file);
+	return (buffer);
 }
 
 /**
- * _getline - Reads input from a stream.
- * @lineptr: A buffer to store the input.
- * @n: The size of lineptr.
- * @stream: The stream to read from.
+ * get_env_value - Gets the value corresponding to an environmental variable.
+ * @beginning: The environmental variable to search for.
+ * @len: The length of the environmental variable to search for.
  *
- * Return: The number of bytes read.
+ * Return: If the variable is not found - an empty string.
+ *         Otherwise - the value of the environmental variable.
+ *
+ * Description: Variables are stored in the format VARIABLE=VALUE.
  */
-ssize_t _getline(char **lineptr, size_t *n, FILE *stream)
+char *get_env_value(char *beginning, int len)
 {
-        static ssize_t input;
-        ssize_t ret;
-        char c = 'x', *buffer;
-        int r;
+	char **var_addr;
+	char *replacement = NULL, *temp, *var;
 
-        if (input == 0)
-                fflush(stream);
-        else
-                return (-1);
+	var = malloc(len + 1);
+	if (!var)
+		return (NULL);
+	var[0] = '\0';
+	_strncat(var, beginning, len);
 
-        input = 0;
+	var_addr = _getenv(var);
+	free(var);
+	if (var_addr)
+	{
+		temp = *var_addr;
+		while (*temp != '=')
+			temp++;
+		temp++;
+		replacement = malloc(_strlen(temp) + 1);
+		if (replacement)
+			_strcpy(replacement, temp);
+	}
 
-        buffer = malloc(sizeof(char) * 120);
-        if (!buffer)
-                return (-1);
+	return (replacement);
+}
 
-        while (c != '\n')
-        {
-                r = read(STDIN_FILENO, &c, 1);
-                if (r == -1 || (r == 0 && input == 0))
-                {
-                        free(buffer);
-                        return (-1);
-                }
-                if (r == 0 && input != 0)
-                {
-                        input++;
-                        break;
-                }
+/**
+ * variable_replacement - Handles variable replacement.
+ * @line: A double pointer containing the command and arguments.
+ * @exe_ret: A pointer to the return value of the last executed command.
+ *
+ * Description: Replaces $$ with the current PID, $? with the return value
+ *              of the last executed program, and envrionmental variables
+ *              preceded by $ with their corresponding value.
+ */
+void variable_replacement(char **line, int *exe_ret)
+{
+	int j, k = 0, len;
+	char *replacement = NULL, *old_line = NULL, *new_line;
 
-                if (input >= 120)
-                        buffer = _realloc(buffer, input, input + 1);
-
-                buffer[input] = c;
-                input++;
-       
+	old_line = *line;
+	for (j = 0; old_line[j]; j++)
+	{
+		if (old_line[j] == '$' && old_line[j + 1] &&
+				old_line[j + 1] != ' ')
+		{
+			if (old_line[j + 1] == '$')
+			{
+				replacement = get_pid();
+				k = j + 2;
+			}
+			else if (old_line[j + 1] == '?')
+			{
+				replacement = _itoa(*
 

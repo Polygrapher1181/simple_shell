@@ -79,6 +79,4 @@ void free_env(void)
 
 /*
  * File: environ.c
- * Auth: Mercy 
- *       Polyy
  */

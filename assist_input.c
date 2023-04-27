@@ -1,11 +1,5 @@
 #include "carp.h"
 
-char *get_args(char *line, int *exe_ret);
-int call_args(char **args, char **front, int *exe_ret);
-int run_args(char **args, char **front, int *exe_ret);
-int handle_args(int *exe_ret);
-int check_args(char **args);
-
 /**
  * get_args - Gets a command from standard input.
  * @line: A buffer to store the command.
@@ -16,29 +10,29 @@ int check_args(char **args);
  */
 char *get_args(char *line, int *exe_ret)
 {
-    size_t n = 0;
-    ssize_t read;
-    char *prompt = "$ ";
+	size_t n = 0;
+	ssize_t read;
+	char *prompt = "$ ";
 
-    if (line)
-        free(line);
+	if (line)
+		free(line);
 
-    read = _getline(&line, &n, STDIN_FILENO);
-    if (read == -1)
-        return (NULL);
-    if (read == 1)
-    {
-        hist++;
-        if (isatty(STDIN_FILENO))
-            write(STDOUT_FILENO, prompt, 2);
-        return (get_args(line, exe_ret));
-    }
+	read = _getline(&line, &n, STDIN_FILENO);
+	if (read == -1)
+		return (NULL);
+	if (read == 1)
+	{
+		hist++;
+		if (isatty(STDIN_FILENO))
+			write(STDOUT_FILENO, prompt, 2);
+		return (get_args(line, exe_ret));
+	}
 
-    line[read - 1] = '\0';
-    variable_replacement(&line, exe_ret);
-    handle_line(&line, read);
+	line[read - 1] = '\0';
+	variable_replacement(&line, exe_ret);
+	handle_line(&line, read);
 
-    return (line);
+	return (line);
 }
 
 /**
@@ -51,52 +45,35 @@ char *get_args(char *line, int *exe_ret)
  */
 int call_args(char **args, char **front, int *exe_ret)
 {
-    int ret, index;
+	int ret, index;
+	char *sep[] = {"||", "&&", NULL};
+	void (*logic_ops[])(char **, char **, int *) = {handle_or, handle_and, NULL};
 
-    if (!args[0])
-        return (*exe_ret);
-    for (index = 0; args[index]; index++)
-    {
-        if (_strncmp(args[index], "||", 2) == 0)
-        {
-            free(args[index]);
-            args[index] = NULL;
-            args = replace_aliases(args);
-            ret = run_args(args, front, exe_ret);
-            if (*exe_ret != 0)
-            {
-                args = &args[++index];
-                index = 0;
-            }
-            else
-            {
-                for (index++; args[index]; index++)
-                    free(args[index]);
-                return (ret);
-            }
-        }
-        else if (_strncmp(args[index], "&&", 2) == 0)
-        {
-            free(args[index]);
-            args[index] = NULL;
-            args = replace_aliases(args);
-            ret = run_args(args, front, exe_ret);
-            if (*exe_ret == 0)
-            {
-                args = &args[++index];
-                index = 0;
-            }
-            else
-            {
-                for (index++; args[index]; index++)
-                    free(args[index]);
-                return (ret);
-            }
-        }
-    }
-    args = replace_aliases(args);
-    ret = run_args(args, front, exe_ret);
-    return (ret);
+	if (!args[0])
+		return (*exe_ret);
+
+	for (index = 0; args[index]; index++)
+	{
+		if (is_sep(args[index], sep))
+		{
+			args[index] = NULL;
+			args = replace_aliases(args);
+			ret = logic_ops[index / 2](args, front, exe_ret);
+			if (*exe_ret != 0 == index / 2)
+			{
+				args = &args[++index];
+				index = -1;
+			}
+			else
+			{
+				free_args(args, args + index + 1);
+				return (ret);
+			}
+		}
+	}
+	args = replace_aliases(args);
+	ret = run_args(args, front, exe_ret);
+	return (ret);
 }
 
 /**
@@ -109,13 +86,36 @@ int call_args(char **args, char **front, int *exe_ret)
  */
 int run_args(char **args, char **front, int *exe_ret)
 {
-    int ret, i;
-    int (*builtin)(char **args, char **front);
+	int ret;
+	int (*builtin)(char **args, char **front);
 
-    builtin = get_builtin(args[0]);
+	builtin = get_builtin(args[0]);
 
-    if (builtin)
-    {
-        ret = builtin(args + 1, front);
-        if
+	if (builtin)
+	{
+		ret = builtin(args + 1, front);
+		if (ret != EXIT)
+			*exe_ret = ret;
+	}
+	else
+	{
+		*exe_ret = execute(args, front);
+		ret = *exe_ret;
+	}
+
+	hist++;
+	free_args(front, args);
+	return (ret);
+}
+
+/**
+ * handle_args - Gets, calls, and runs the execution of a command.
+ * @exe_ret: The return value of the parent process' last executed command.
+ *
+ * Return: If an end-of-file is read - END_OF_FILE (-2).
+ *         If the input cannot be tokenized - -1.
+ *         O/w - The exit value of the last executed command.
+ */
+int handle_args(int *exe
+
 

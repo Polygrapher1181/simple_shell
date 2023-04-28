@@ -126,4 +126,4 @@ char *error_2_cd(char **args)
 	_strcpy(error, name);
 	_strcat(error, ": ");
 	_strcat(error, hist_str);
-	if (args[0][0] ==
+

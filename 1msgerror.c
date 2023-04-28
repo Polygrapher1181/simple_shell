@@ -123,7 +123,4 @@ char *error_2_cd(char **args)
 		return (NULL);
 	}
 
-	_strcpy(error, name);
-	_strcat(error, ": ");
-	_strcat(error, hist_str);
-
+	
